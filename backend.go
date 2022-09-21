@@ -5,16 +5,12 @@ import (
 	"io"
 	"io/ioutil"
 	"net/url"
-	"os"
 	"regexp"
 	"strings"
 )
 
 type Opener interface {
 	Open(string) (io.ReadCloser, error)
-}
-type ReadDirer interface {
-	ReadDir(string) ([]os.DirEntry, error)
 }
 
 type Backend interface {
@@ -50,7 +46,13 @@ func Parse(uri string) (*url.URL, Backend, error) {
 	}
 }
 
-func Open(uri string) (io.ReadCloser, error) {
+type AutoBackend struct{}
+
+func Default() Backend {
+	return &AutoBackend{}
+}
+
+func (_ *AutoBackend) Open(uri string) (io.ReadCloser, error) {
 	url, b, err := Parse(uri)
 	if err != nil {
 		return nil, err
@@ -65,8 +67,8 @@ func Open(uri string) (io.ReadCloser, error) {
 	return nil, ErrNotImplemented
 }
 
-func ReadFile(uri string) ([]byte, error) {
-	r, err := Open(uri)
+func (b *AutoBackend) ReadFile(uri string) ([]byte, error) {
+	r, err := b.Open(uri)
 	if err != nil {
 		return nil, err
 	}
